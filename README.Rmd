@@ -1,0 +1,131 @@
+---
+title: "README"
+author: "YZ"
+date: "September 20, 2019"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Getting and Cleaning Data Course Project
+
+set wd
+
+```{r }
+setwd("C:/Users/Public/Dropbox (Personal)/ETELSE/coursera/data science specialization/ds")
+```
+
+downloading and unzipping the dataset
+
+```{r}
+if(!file.exists(".")){dir.create("./data")}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+download.file(fileUrl,destfile="./Dataset.zip")
+```
+
+Unzip dataSet to /data directory
+
+```{r}
+unzip(zipfile="./Dataset.zip",exdir="./data")
+```
+
+Reading trainings tables
+
+```{r}
+x_train <- read.table("./data/UCI HAR Dataset/train/X_train.txt")
+y_train <- read.table("./data/UCI HAR Dataset/train/y_train.txt")
+subject_train <- read.table("./data/UCI HAR Dataset/train/subject_train.txt")
+```
+
+Reading testing tables
+
+```{r}
+x_test <- read.table("./data/UCI HAR Dataset/test/X_test.txt")
+y_test <- read.table("./data/UCI HAR Dataset/test/y_test.txt")
+subject_test <- read.table("./data/UCI HAR Dataset/test/subject_test.txt")
+```
+
+Reading feature vector
+
+```{r}
+features <- read.table('./data/UCI HAR Dataset/features.txt')
+```
+
+Reading activity labels
+
+```{r}
+activityLabels = read.table('./data/UCI HAR Dataset/activity_labels.txt')
+```
+
+assigning column names
+
+```{r}
+colnames(x_train) <- features[,2] 
+colnames(y_train) <-"activityId"
+colnames(subject_train) <- "subjectId"
+
+colnames(x_test) <- features[,2] 
+colnames(y_test) <- "activityId"
+colnames(subject_test) <- "subjectId"
+
+colnames(activityLabels) <- c('activityId','activityType')
+```
+
+### 1. Merging the training and the test sets to create one data set
+
+```{r}
+mrg_train <- cbind(y_train, subject_train, x_train)
+mrg_test <- cbind(y_test, subject_test, x_test)
+setAllInOne <- rbind(mrg_train, mrg_test)
+```
+
+Reading column names
+
+```{r}
+colNames <- colnames(setAllInOne)
+```
+
+Create vector for defining ID, mean and standard deviation
+
+```{r}
+mean_and_std <- (grepl("activityId" , colNames) | 
+                   grepl("subjectId" , colNames) | 
+                   grepl("mean.." , colNames) | 
+                   grepl("std.." , colNames) 
+)
+```
+
+### 2. Extracting only the measurements on the mean and standard deviation for each measurement
+
+```{r}
+setForMeanAndStd <- setAllInOne[ , mean_and_std == TRUE]
+```
+
+### 3. Using descriptive activity names to name the activities in the data set
+
+```{r}
+setWithActivityNames <- merge(setForMeanAndStd, activityLabels,
+                              by='activityId',
+                              all.x=TRUE)
+```
+### 4. Appropriately labels the data set with descriptive variable names
+
+This is done as part of the data prep for q.3
+
+### 5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+
+```{r}
+TidySet <- aggregate(. ~subjectId + activityId, setWithActivityNames, mean)
+TidySet <- TidySet[order(TidySet$subjectId, TidySet$activityId),]
+write.table(TidySet, "TidySet.txt", row.name=FALSE)
+```
+
+### code book:
+
+The new variables created are described above in preparation for q.3. The  A full description of the data is available at the site where the data was obtained: 
+
+http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
